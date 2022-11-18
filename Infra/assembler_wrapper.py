@@ -1,5 +1,5 @@
-import struct
-import ctypes
+from collections import OrderedDict
+
 
 
 
@@ -33,39 +33,64 @@ OPCODE_TO_NUMBER = {
 }
 
 REGISTER_TO_NUMBER = {
-    "zero" : 0,
-    "imm" : 1,
-    "v0" : 2,
-    "a0" : 3,
-    "a1" : 4,
-    "a2" : 5,
-    "a3" : 6,
-    "t0" : 7,
-    "t1" : 8,
-    "t2" : 9,
-    "s0" : 10,
-    "s1" : 11,
-    "s2" : 12,
-    "gp" : 13,
-    "sp" : 14,
-    "ra" : 15,
+    "$zero" : 0,
+    "$imm" : 1,
+    "$v0" : 2,
+    "$a0" : 3,
+    "$a1" : 4,
+    "$a2" : 5,
+    "$a3" : 6,
+    "$t0" : 7,
+    "$t1" : 8,
+    "$t2" : 9,
+    "$s0" : 10,
+    "$s1" : 11,
+    "$s2" : 12,
+    "$gp" : 13,
+    "$sp" : 14,
+    "$ra" : 15,
 }
 
 
 class Assembler(object):
-    def __init__(self, assembler_path, should_compile=False):
-        if should_compile:
-            raise AssemblerException("Not implemented yet!")
-        self.assembler_path = assembler_path
+    def __init__(self, input_data):
+        self.input_data = input_data
+        self.assembly_lines = OrderedDict()
 
-    def run(self, input__asm_file_path):
-        # Returns memin.txt file
+    def first_phase(self):
+        self.current_index = 0
+        for line in self.input_data.splitlines():
+            self.assembly_lines[self.current_index] = AssemblyLine(line)
+            self.current_index += 4
+
+    def second_phase(self):
         pass
 
+    def finalize(self):
+        output = ""
+        for _, asm_line in self.assembly_lines.items():
+            output += asm_line.packed_data + "\n"
+
+        # Fill rest of file with zeros
+        while self.current_index < 4096:
+            output += 20*"0" + "\n"
+            self.current_index += 4
+
+        return output
+
+
+    def run(self):
+        # Returns memin.txt file
+        self.first_phase()
+        self.second_phase()
+        self.finalize()
 
 class AssemblerTestRunner(object):
     def __init__(self, assembler_path, should_compile=False):
-        self.assembler = Assembler(assembler_path, should_compile=should_compile)
+        input_data = "L1: sub $t0, $t2, $t1, 0\n"
+        input_data += "mul $a0, $t2, $t1, 0"
+        self.assembler = Assembler(input_data)
+        self.assembler.run()
 
 
 class Field(object):
@@ -83,24 +108,19 @@ class FieldOp(Field):
 
 class FieldRd(Field):
     def __init__(self, value):
-        value = REGISTER_TO_NUMBER[value.strip(r"$")]
+        value = REGISTER_TO_NUMBER[value]
         super(FieldRd, self).__init__(value, 4)
 
 class FieldRs(Field):
     def __init__(self, value):
-        value = REGISTER_TO_NUMBER[value.strip(r"$")]
+        value = REGISTER_TO_NUMBER[value]
         super(FieldRs, self).__init__(value, 4)
 
 class FieldRt(Field):
     def __init__(self, value):
-        value = REGISTER_TO_NUMBER[value.strip(r"$")]
+        value = REGISTER_TO_NUMBER[value]
         super(FieldRt, self).__init__(value, 4)
 
-class CommandGeneral(ctypes.BigEndianStructure):
-    _fields_ = [
-        ("op", ctypes.c_uint32, 6),
-        ("other", ctypes.c_uint32, 14),
-    ]
 class CommandRFormat(object):
     def __init__(self, op, rd, rs, rt):
         self.op = FieldOp(op)
@@ -115,40 +135,6 @@ class CommandRFormat(object):
             self.rs.serialize(),
             self.rt.serialize(),
         ])
-
-class CommandIFormat(ctypes.BigEndianStructure):
-    _fields_ = [
-        ("op", ctypes.c_uint32, 8),
-        ("rd", ctypes.c_uint32, 4),
-        ("rs", ctypes.c_uint32, 4),
-        ("rt", ctypes.c_uint32, 4),
-        ("imm", ctypes.c_uint32, 20),
-    ]
-
-
-# class CommandRFormat(ctypes.BigEndianStructure):
-#     _fields_ = [
-#         ("op", ctypes.c_uint32, 8),
-#         ("rd", ctypes.c_uint32, 4),
-#         ("rs", ctypes.c_uint32, 4),
-#         ("rt", ctypes.c_uint32, 4),
-#     ]
-    # _fields_ = [
-    #     ("op", ctypes.c_uint32, 6),
-    #     ("rs", ctypes.c_uint32, 5),
-    #     ("rt", ctypes.c_uint32, 5),
-    #     ("rd", ctypes.c_uint32, 5),
-    #     ("shamt", ctypes.c_uint32, 5),
-    #     ("funct", ctypes.c_uint32, 6),
-    # ]
-
-# class CommandJFormat(ctypes.BigEndianStructure):
-#     _fields_ = [
-#         ("op", ctypes.c_uint32, 6),
-#         ("address", ctypes.c_uint32, 26),
-#     ]
-
-
 
 
 
@@ -185,7 +171,6 @@ class AssemblyLine(object):
                                         self.rs,
                                         self.rt)
         return packed_command.serialize()
-
 
     def __str__(self):
         s = ""
