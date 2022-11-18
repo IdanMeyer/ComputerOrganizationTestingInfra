@@ -23,11 +23,38 @@ class AssemblerTestRunner(object):
         self.assembler = Assembler(assembler_path, should_compile=should_compile)
 
 
-class CStruct(ctypes.BigEndianStructure):
+class CommandGeneral(ctypes.BigEndianStructure):
     _fields_ = [
-        ("op", ctypes.c_uint32, 6),  # 6 bit wide
-        ("other", ctypes.c_uint32, 26), # 25 bits wide
+        ("op", ctypes.c_uint32, 6),
+        ("other", ctypes.c_uint32, 26),
     ]
+
+class CommandIFormat(ctypes.BigEndianStructure):
+    _fields_ = [
+        ("op", ctypes.c_uint32, 6),
+        ("rs", ctypes.c_uint32, 5),
+        ("rt", ctypes.c_uint32, 5),
+        ("imm", ctypes.c_uint32, 16),
+    ]
+
+class CommandRFormat(ctypes.BigEndianStructure):
+    _fields_ = [
+        ("op", ctypes.c_uint32, 6),
+        ("rs", ctypes.c_uint32, 5),
+        ("rt", ctypes.c_uint32, 5),
+        ("rd", ctypes.c_uint32, 5),
+        ("shamt", ctypes.c_uint32, 5),
+        ("funct", ctypes.c_uint32, 6),
+    ]
+
+class CommandJFormat(ctypes.BigEndianStructure):
+    _fields_ = [
+        ("op", ctypes.c_uint32, 6),
+        ("address", ctypes.c_uint32, 26),
+    ]
+
+
+
 
 
 
@@ -52,6 +79,15 @@ class AssemblyLine(object):
         # Remove commas from command
         parts = [x.strip(',') for x in parts]
         self.opcode, self.rd, self.rs, self.rt, self.imm = tuple(parts)
+
+        aaa = self.pack()
+        # import ipdb;ipdb.set_trace()
+
+    def pack(self):
+        packed_command = CommandJFormat()
+        packed_command.op = 1
+        packed_command.address = 2
+        return bin(struct.unpack_from('!I', packed_command)[0])
 
 
 
