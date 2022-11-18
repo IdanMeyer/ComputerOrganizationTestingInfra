@@ -26,32 +26,88 @@ class AssemblerTestRunner(object):
 class CommandGeneral(ctypes.BigEndianStructure):
     _fields_ = [
         ("op", ctypes.c_uint32, 6),
-        ("other", ctypes.c_uint32, 26),
+        ("other", ctypes.c_uint32, 14),
     ]
 
 class CommandIFormat(ctypes.BigEndianStructure):
     _fields_ = [
-        ("op", ctypes.c_uint32, 6),
-        ("rs", ctypes.c_uint32, 5),
-        ("rt", ctypes.c_uint32, 5),
-        ("imm", ctypes.c_uint32, 16),
+        ("op", ctypes.c_uint32, 8),
+        ("rd", ctypes.c_uint32, 4),
+        ("rs", ctypes.c_uint32, 4),
+        ("rt", ctypes.c_uint32, 4),
+        ("imm", ctypes.c_uint32, 20),
     ]
+    # _fields_ = [
+    #     ("op", ctypes.c_uint32, 6),
+    #     ("rs", ctypes.c_uint32, 5),
+    #     ("rt", ctypes.c_uint32, 5),
+    #     ("imm", ctypes.c_uint32, 16),
+    # ]
 
 class CommandRFormat(ctypes.BigEndianStructure):
     _fields_ = [
-        ("op", ctypes.c_uint32, 6),
-        ("rs", ctypes.c_uint32, 5),
-        ("rt", ctypes.c_uint32, 5),
-        ("rd", ctypes.c_uint32, 5),
-        ("shamt", ctypes.c_uint32, 5),
-        ("funct", ctypes.c_uint32, 6),
+        ("op", ctypes.c_uint32, 8),
+        ("rd", ctypes.c_uint32, 4),
+        ("rs", ctypes.c_uint32, 4),
+        ("rt", ctypes.c_uint32, 4),
     ]
+    # _fields_ = [
+    #     ("op", ctypes.c_uint32, 6),
+    #     ("rs", ctypes.c_uint32, 5),
+    #     ("rt", ctypes.c_uint32, 5),
+    #     ("rd", ctypes.c_uint32, 5),
+    #     ("shamt", ctypes.c_uint32, 5),
+    #     ("funct", ctypes.c_uint32, 6),
+    # ]
 
-class CommandJFormat(ctypes.BigEndianStructure):
-    _fields_ = [
-        ("op", ctypes.c_uint32, 6),
-        ("address", ctypes.c_uint32, 26),
-    ]
+# class CommandJFormat(ctypes.BigEndianStructure):
+#     _fields_ = [
+#         ("op", ctypes.c_uint32, 6),
+#         ("address", ctypes.c_uint32, 26),
+#     ]
+COMMAND_TO_OPCODE = {
+    "add" : 0,
+    "sub" : 1,
+    "mul" : 2,
+    "and" : 3,
+    "or"  : 4,
+    "xor"  : 5,
+    "sll"  : 6,
+    "sra"  : 7,
+    "srl"  : 8,
+    "beq"  : 9,
+    "bne"  : 10,
+    "blt"  : 11,
+    "bgt"  : 12,
+    "ble"  : 13,
+    "bge"  : 14,
+    "jal"  : 15,
+    "lw"  : 16,
+    "sw"  : 17,
+    "reti"  : 18,
+    "in"  : 19,
+    "out"  : 20,
+    "halt"  : 21,
+}
+
+REGISTER_TO_NUMBER = {
+    "zero" : 0,
+    "imm" : 1,
+    "v0" : 2,
+    "a0" : 3,
+    "a1" : 4,
+    "a2" : 5,
+    "a3" : 6,
+    "t0" : 7,
+    "t1" : 8,
+    "t2" : 9,
+    "s0" : 10,
+    "s1" : 11,
+    "s2" : 12,
+    "gp" : 13,
+    "sp" : 14,
+    "ra" : 15,
+}
 
 
 
@@ -88,9 +144,6 @@ class AssemblyLine(object):
         packed_command.op = 1
         packed_command.address = 2
         return bin(struct.unpack_from('!I', packed_command)[0])
-
-
-
 
 
     def assemble_line(self, raw_line):
