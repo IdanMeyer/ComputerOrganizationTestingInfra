@@ -56,17 +56,16 @@ class Assembler(object):
     def __init__(self, input_data):
         self.input_data = input_data
         self.assembly_lines = OrderedDict()
-        self.current_address = 0
 
     def first_phase(self):
-        self.current_address = 0
+        current_address = 0
         label_to_address = {}
         for line in self.input_data.splitlines():
             assembly_line = AssemblyLine(line)
             if assembly_line.label is not None:
-                label_to_address[assembly_line.label] = self.current_address
-            self.assembly_lines[self.current_address] = assembly_line
-            self.current_address += assembly_line.length_lines()
+                label_to_address[assembly_line.label] = current_address
+            self.assembly_lines[current_address] = assembly_line
+            current_address += assembly_line.length_lines()
         return label_to_address
 
 
@@ -283,9 +282,9 @@ class AssemblyLine(object):
     def is_I_format(self):
         # TODO: Is there a situation where this is an I command without imm in one of the regs?
         return any([
-            self.command.rd == "$imm",
-            self.command.rs == "$imm",
-            self.command.rt == "$imm"
+            self.rd == "$imm",
+            self.rs == "$imm",
+            self.rt == "$imm"
         ])
 
     def length_lines(self):
@@ -308,9 +307,9 @@ class AssemblyLine(object):
 
         # Remove commas from command
         parts = [x.strip(',') for x in parts]
-        opcode, rd, rs, rt, imm = tuple(parts)
+        self.opcode, self.rd, self.rs, self.rt, self.imm = tuple(parts)
 
-        self._pack(opcode, rd, rs, rt, imm)
+        self._pack(self.opcode, self.rd, self.rs, self.rt, self.imm)
 
     def _pack(self, opcode, rd, rs, rt, imm):
         if r"$imm" in [rd, rs, rt]:
@@ -324,9 +323,9 @@ class AssemblyLine(object):
     def serialize_to_bytes(self):
         hex_command = int(self.serialize_to_bits(), 2)
         if self.is_I_format():
-            return f"{hex_command:05x}"
+            return f"{hex_command:010x}".upper()
         else:
-            return f"{hex_command:010x}"
+            return f"{hex_command:05x}".upper()
 
     def convert_label_to_address(self, label_to_address):
         if self.command.should_label_be_replaced:
