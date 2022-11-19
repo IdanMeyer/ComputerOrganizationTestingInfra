@@ -252,7 +252,8 @@ class AssemblyLine(object):
         return 1
 
     def _parse_line(self, raw_line):
-        parts = raw_line.split()
+        line_without_comments = raw_line.split('#', 1)[0]
+        parts = line_without_comments.split()
 
         if len(parts) not in [5,6]:
             raise AssemblerException(f"Invalid amount of parts in assembly line: {self.raw_line}")
