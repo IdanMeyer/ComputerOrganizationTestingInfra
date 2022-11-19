@@ -147,10 +147,12 @@ fib: add $sp, $sp, $imm, -3				# adjust stack for 3 items
         self.assembler = Assembler(input_data)
         self.assembler.run()
 
-def twos_comp(val, bits):
-    if (val & (1 << (bits - 1))) != 0: # if sign bit is set e.g., 8bit: 128-255
-        val = val - (1 << bits)        # compute negative value
-    return val                         # return positive value as is
+def num_to_bin(num, wordsize):
+    if num < 0:
+        num = 2**wordsize+num
+    base = bin(num)[2:]
+    padding_size = wordsize - len(base)
+    return '0' * padding_size + base
 
 class Field(object):
     def __init__(self, value, size):
@@ -184,10 +186,12 @@ class FieldImm(Field):
     def __init__(self, value):
         try:
             value = int(value)
-            value = abs(twos_comp(value, 20))
         except ValueError:
             pass
         super(FieldImm, self).__init__(value, 20)
+
+    def serialize(self):
+        return num_to_bin(self.value, 20)
 
 
 class CommandRFormat(object):
