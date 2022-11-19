@@ -56,39 +56,49 @@ class Assembler(object):
     def __init__(self, input_data):
         self.input_data = input_data
         self.assembly_lines = OrderedDict()
+        self.current_address = 0
 
     def first_phase(self):
-        self.current_index = 0
+        self.current_address = 0
+        label_to_address = {}
         for line in self.input_data.splitlines():
-            self.assembly_lines[self.current_index] = AssemblyLine(line)
-            self.current_index += 4
+            assembly_line = AssemblyLine(line)
+            if assembly_line.label is not None:
+                label_to_address[assembly_line.label] = self.current_address
+            self.assembly_lines[self.current_address] = assembly_line
+            self.current_address += assembly_line.length_lines()
+        return label_to_address
 
-    def second_phase(self):
-        pass
 
-    def finalize(self):
+    def second_phase(self, label_to_address):
         output = ""
-        for _, asm_line in self.assembly_lines.items():
-            output += asm_line.packed_data + "\n"
-
-        # Fill rest of file with zeros
-        while self.current_index < 4096:
-            output += 20*"0" + "\n"
-            self.current_index += 4
+        for _, line in self.assembly_lines.items():
+            line.convert_label_to_address(label_to_address)
+            line_bytes = line.serialize_to_bytes()
+            if len(line_bytes) == 5:
+                output += f"{line_bytes}\n"
+            elif len(line_bytes) == 10:
+                output += f"{line_bytes[0:5]}\n{line_bytes[5:10]}\n"
+            else:
+                raise AssemblerException(f"Invalid amount of bytes in line: {line}")
 
         return output
 
 
     def run(self):
         # Returns memin.txt file
-        self.first_phase()
-        self.second_phase()
-        self.finalize()
+        label_to_address = self.first_phase()
+        output = self.second_phase(label_to_address)
+        print("Output:")
+        print(output)
+        # self.finalize()
+
 
 class AssemblerTestRunner(object):
     def __init__(self, assembler_path, should_compile=False):
         input_data = "L1: sub $t0, $t2, $t1, 0\n"
-        input_data += "mul $a0, $t2, $t1, 0"
+        input_data += "mul $a0, $t2, $t1, 0\n"
+        input_data += "jal $ra, $imm, $zero, L1\n"
         self.assembler = Assembler(input_data)
         self.assembler.run()
 
@@ -121,12 +131,26 @@ class FieldRt(Field):
         value = REGISTER_TO_NUMBER[value]
         super(FieldRt, self).__init__(value, 4)
 
+class FieldImm(Field):
+    def __init__(self, value):
+        try:
+            value = int(value)
+        except ValueError:
+            pass
+        super(FieldImm, self).__init__(value, 20)
+
+
 class CommandRFormat(object):
     def __init__(self, op, rd, rs, rt):
         self.op = FieldOp(op)
         self.rd = FieldRd(rd)
         self.rs = FieldRs(rs)
         self.rt = FieldRt(rt)
+        self.imm = None
+        self.should_label_be_replaced = False
+
+    def update_label(self, address):
+        raise AssemblerException("Cannot update label on R format")
 
     def serialize(self):
         return "".join([
@@ -136,6 +160,60 @@ class CommandRFormat(object):
             self.rt.serialize(),
         ])
 
+    def __str__(self):
+        packed_data = self.serialize()
+        s = ""
+        s+= "|"
+        s+= packed_data[0:8]
+        s+= "|"
+        s+= packed_data[8:12]
+        s+= "|"
+        s+= packed_data[12:16]
+        s+= "|"
+        s+= packed_data[16:20]
+        s+= "|\n"
+        s+= "|opcode  |rd  |rs  |rt  |\n"
+        return s
+
+class CommandIFormat(object):
+    def __init__(self, op, rd, rs, rt, imm):
+        self.op = FieldOp(op)
+        self.rd = FieldRd(rd)
+        self.rs = FieldRs(rs)
+        self.rt = FieldRt(rt)
+        self.imm = FieldImm(imm)
+        self.should_label_be_replaced = self.imm.value[0].isalpha()
+
+    def update_label(self, address):
+        self.imm.value = address
+        self.should_label_be_replaced = False
+
+    def serialize(self):
+        return "".join([
+            self.op.serialize(),
+            self.rd.serialize(),
+            self.rs.serialize(),
+            self.rt.serialize(),
+            self.imm.serialize(),
+        ])
+
+    def __str__(self):
+        packed_data = self.serialize()
+        s = ""
+        s+= "|"
+        s+= packed_data[0:8]
+        s+= "|"
+        s+= packed_data[8:12]
+        s+= "|"
+        s+= packed_data[12:16]
+        s+= "|"
+        s+= packed_data[16:20]
+        s+= "|"
+        s+= packed_data[20:40]
+        s+= "|\n"
+        s+= "|opcode  |rd  |rs  |rt  |imm                 |\n"
+        return s
+
 
 
 
@@ -143,9 +221,21 @@ class AssemblyLine(object):
     def __init__(self, line):
         self.raw_line = line
         self.label = None
-        self.packed_data = None
 
         self._parse_line(line)
+
+    def is_I_format(self):
+        # TODO: Is there a situation where this is an I command without imm in one of the regs?
+        return any([
+            self.command.rd == "$imm",
+            self.command.rs == "$imm",
+            self.command.rt == "$imm"
+        ])
+
+    def length_lines(self):
+        if self.is_I_format():
+            return 2
+        return 1
 
     def _parse_line(self, raw_line):
         parts = raw_line.split()
@@ -161,37 +251,43 @@ class AssemblyLine(object):
 
         # Remove commas from command
         parts = [x.strip(',') for x in parts]
-        self.opcode, self.rd, self.rs, self.rt, self.imm = tuple(parts)
+        opcode, rd, rs, rt, imm = tuple(parts)
 
-        self.packed_data = self._pack()
+        self._pack(opcode, rd, rs, rt, imm)
 
-    def _pack(self):
-        packed_command = CommandRFormat(self.opcode,
-                                        self.rd,
-                                        self.rs,
-                                        self.rt)
-        return packed_command.serialize()
+    def _pack(self, opcode, rd, rs, rt, imm):
+        if r"$imm" in [rd, rs, rt]:
+            self.command = CommandIFormat(opcode, rd, rs, rt, imm)
+        else:
+            self.command = CommandRFormat(opcode, rd, rs, rt)
+
+    def serialize_to_bits(self):
+        return self.command.serialize()
+
+    def serialize_to_bytes(self):
+        hex_command = int(self.serialize_to_bits(), 2)
+        if self.is_I_format():
+            return f"{hex_command:05x}"
+        else:
+            return f"{hex_command:010x}"
+
+    def convert_label_to_address(self, label_to_address):
+        if self.command.should_label_be_replaced:
+            label_name = self.command.imm.value
+            if label_name not in label_to_address:
+                raise AssemblerException(f"Cannot find address of label: {label_name}")
+            self.command.update_label(int(label_to_address[label_name]))
 
     def __str__(self):
         s = ""
-        s += f"label = {self.label}\n"
-        s += f"opcode = {self.opcode}\n"
-        s += f"rd = {self.rd}\n"
-        s += f"rs = {self.rs}\n"
-        s += f"rt = {self.rt}\n"
-        s += f"imm = {self.imm}\n"
+        # s += f"label = {self.label}\n"
+        # s += f"opcode = {self.opcode}\n"
+        # s += f"rd = {self.rd}\n"
+        # s += f"rs = {self.rs}\n"
+        # s += f"rt = {self.rt}\n"
+        # s += f"imm = {self.imm}\n"
 
-        if self.packed_data is not None:
-            s+= "|"
-            s+= self.packed_data[0:8]
-            s+= "|"
-            s+= self.packed_data[8:12]
-            s+= "|"
-            s+= self.packed_data[12:16]
-            s+= "|"
-            s+= self.packed_data[16:20]
-            s+= "|\n"
-            s+= "|opcode  |rd  |rs  |rt  |\n"
+        s += str(self.command)
         return s
 
     def __repr__(self):
