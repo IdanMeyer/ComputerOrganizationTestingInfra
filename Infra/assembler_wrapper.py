@@ -96,9 +96,18 @@ class Assembler(object):
 
 class AssemblerTestRunner(object):
     def __init__(self, assembler_path, should_compile=False):
-        input_data = "L1: sub $t0, $t2, $t1, 0\n"
-        input_data += "mul $a0, $t2, $t1, 0\n"
-        input_data += "jal $ra, $imm, $zero, L1\n"
+        # input_data = "L1: sub $t0, $t2, $t1, 0\n"
+        # input_data += "mul $a0, $t2, $t1, 0\n"
+        # input_data += "jal $ra, $imm, $zero, L1\n"
+        input_data = '''add $t2, $zero, $imm, 1
+	out $t2, $zero, $imm, 2
+	sll $sp, $t2, $imm, 11
+	add $t2, $zero, $imm, L3
+	out $t2, $zero, $imm, 6
+	lw $a0, $zero, $imm, 256
+	jal $ra, $imm, $zero, fib
+	sw $v0, $zero, $imm, 257
+	halt $zero, $zero, $zero, 0'''
         self.assembler = Assembler(input_data)
         self.assembler.run()
 
@@ -182,7 +191,12 @@ class CommandIFormat(object):
         self.rs = FieldRs(rs)
         self.rt = FieldRt(rt)
         self.imm = FieldImm(imm)
-        self.should_label_be_replaced = self.imm.value[0].isalpha()
+        self.should_label_be_replaced = False
+
+        if type(self.imm.value) is str:
+            if self.imm.value[0].isalpha():
+                self.should_label_be_replaced = True
+
 
     def update_label(self, address):
         self.imm.value = address
