@@ -1,5 +1,7 @@
-from collections import OrderedDict
 import os
+import subprocess
+from collections import OrderedDict
+
 
 
 
@@ -174,9 +176,26 @@ class Assembler(object):
 
 
 class AssemblerTestRunner(object):
-    def __init__(self, assembler_path, should_compile=False):
+    def __init__(self, assembler_path, test_folder, should_compile=False):
+        self.c_assembler = assembler_path
         self.assembler = Assembler()
         self.input_data = None
+        self.expected_output = None
+        self.test_folder = test_folder
+
+    def execute_c_assembler(self, cmd_args):
+        command = ["cd", self.test_folder, "&&", self.c_assembler] + cmd_args
+        # TODO: change this to use Popen instead of os.system
+        result = os.system(" ".join(command))
+        if result != 0:
+            raise AssemblerException(f"C assembler failed")
+
+
+        # Return output from memin
+        memin_path = os.path.join(self.test_folder, "memin.txt")
+        with open(memin_path, "r") as f:
+            memin_data =  f.read()
+        return memin_data
 
     def set_input_data_from_str(self, input_data):
         self.input_data = input_data
@@ -187,6 +206,26 @@ class AssemblerTestRunner(object):
             input_data = f.read()
         self.set_input_data_from_str(input_data)
 
+    def set_expected_output(self, expected_output):
+        pass
+
+    def run(self):
+        expected_output = self.expected_output
+
+        # Run python assembler if specific output not given
+        if not expected_output:
+            expected_output = self.assembler.run()
+
+        c_assembler_output = self.execute_c_assembler([])
+        assert expected_output == c_assembler_output
+
+
+class PythonAssemblerTestRunner(AssemblerTestRunner):
+    def __init__(self, assembler_path, should_compile=False):
+        self.assembler = Assembler()
+        self.input_data = ""
+        self.expected_output = ""
+
     def set_expected_output_from_str(self, expected_output):
         self.expected_output = expected_output
 
@@ -195,15 +234,6 @@ class AssemblerTestRunner(object):
             expected_output = f.read()
         self.set_expected_output_from_str(expected_output)
 
-    def run(self, input_data):
-        raise AssemblerException("Not implemented yet")
-
-
-class PythonAssemblerTestRunner(AssemblerTestRunner):
-    def __init__(self, assembler_path, should_compile=False):
-        self.assembler = Assembler()
-        self.input_data = ""
-        self.expected_output = ""
 
     def run(self):
         python_assembler_output = self.assembler.run()
