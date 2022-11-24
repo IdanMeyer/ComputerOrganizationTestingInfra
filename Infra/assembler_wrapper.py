@@ -69,11 +69,44 @@ class Assembler(object):
             potential_label = line.split(":")[0]
         return potential_label
 
+    def is_word_command(self, line):
+        line = _remove_comments_from_line(line).strip()
+        split_line = line.split()
+        if split_line[0] in ["word", ".word"] and len(split_line) == 3:
+            return True
+        return False
+
+    def handle_word_commands(self, original_output):
+        output_split_lines = original_output.splitlines()
+
+        for line in self.input_data.splitlines():
+            if not self.is_word_command(line):
+                continue
+
+            # Get address and data
+            line = _remove_comments_from_line(line).strip()
+            address, data = line.split()[1:3]
+            address, data = int(address), f"{int(data):05x}".upper()
+
+            # TODO: Check address not already set?
+
+            # Fill empty lines with zeros if needed
+            while len(output_split_lines) < int(address):
+                output_split_lines.append(f"{int(0):05x}".upper())
+            output_split_lines.append(data)
+
+
+        return os.linesep.join(output_split_lines) + os.linesep
+
+
     def first_phase(self):
         current_address = 0
         label_to_address = {}
 
         for line in self.input_data.splitlines():
+            if self.is_word_command(line):
+                continue
+
             assembly_line = AssemblyLine(line)
             if assembly_line.label is not None:
                 label_to_address[assembly_line.label] = current_address
@@ -125,7 +158,6 @@ class Assembler(object):
 
             input_data_without_blank_lines.append(line)
 
-
         self.input_data = os.linesep.join(input_data_without_blank_lines)
 
         return self.input_data
@@ -135,6 +167,7 @@ class Assembler(object):
         # Returns memin.txt file
         label_to_address = self.first_phase()
         output = self.second_phase(label_to_address)
+        output = self.handle_word_commands(output)
         print("Output:")
         print(output)
         return output
@@ -174,8 +207,7 @@ class PythonAssemblerTestRunner(AssemblerTestRunner):
 
     def run(self):
         python_assembler_output = self.assembler.run()
-        # TODO: Remove this hack once python assembler is complete
-        assert self.expected_output[:300] == python_assembler_output[:300]
+        assert self.expected_output == python_assembler_output
 
 
 def num_to_bin(num, wordsize):
@@ -338,7 +370,7 @@ class AssemblyLine(object):
 
         parts = line_without_tabs.split()
 
-        if len(parts) not in [5,6]:
+        if len(parts) not in [5, 6]:
             raise AssemblerException(f"Invalid amount of parts in assembly line: {self.raw_line}")
 
         # Check if there is a label
@@ -378,13 +410,6 @@ class AssemblyLine(object):
 
     def __str__(self):
         s = ""
-        # s += f"label = {self.label}\n"
-        # s += f"opcode = {self.opcode}\n"
-        # s += f"rd = {self.rd}\n"
-        # s += f"rs = {self.rs}\n"
-        # s += f"rt = {self.rt}\n"
-        # s += f"imm = {self.imm}\n"
-
         s += str(self.command)
         return s
 

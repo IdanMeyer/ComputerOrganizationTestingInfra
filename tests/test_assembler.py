@@ -52,6 +52,7 @@ fib: add $sp, $sp, $imm, -3				# adjust stack for 3 items
 	reti $zero, $zero, $zero, 0			# return from interrupt'''
 
     # runner.set_input_data_from_str(input_data)
+    # runner.set_input_data_from_str(".word 256 1")
     runner.set_input_data_from_file("tests/resources/fib.asm")
     # TODO: Get basedir in a pythonic way
     runner.set_expected_output_from_file("tests/resources/memin.txt")
