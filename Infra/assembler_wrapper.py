@@ -398,7 +398,8 @@ class AssemblyLine(object):
         line_without_comments = _remove_comments_from_line(raw_line)
         line_without_tabs = self._replace_tabs_with_spaces(line_without_comments)
 
-        parts = line_without_tabs.split()
+        # Remove commas and split line to parts
+        parts = line_without_tabs.replace(',', ' ').split()
 
         if len(parts) not in [5, 6]:
             raise AssemblerException(f"Invalid amount of parts in assembly line: {self.raw_line}")
@@ -409,8 +410,6 @@ class AssemblyLine(object):
             parts = parts[1:]
 
 
-        # Remove commas from command
-        parts = [x.strip(',') for x in parts]
         self.opcode, self.rd, self.rs, self.rt, self.imm = tuple(parts)
 
         self._pack(self.opcode, self.rd, self.rs, self.rt, self.imm)
