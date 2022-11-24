@@ -1,8 +1,11 @@
 import pytest
+import pathlib
 from Infra.assembler_wrapper import AssemblerTestRunner, AssemblyLine, PythonAssemblerTestRunner
 
 # ASSEMBLER_PATH = "<assembler_path>"
 ASSEMBLER_PATH = "~/tmp/exec3"
+
+TESTS_BASE_FOLDER = pathlib.Path(__file__).parent.resolve()
 
 def test_python_assembler():
     runner = PythonAssemblerTestRunner(ASSEMBLER_PATH)
@@ -53,9 +56,8 @@ def test_python_assembler():
 	# out $zero, $zero, $imm, 5			# clear irq2 status
 	# reti $zero, $zero, $zero, 0			# return from interrupt'''
 
-    # TODO: Get basedir in a pythonic way
-    runner.set_input_data_from_file("tests/resources/fib.asm")
-    runner.set_expected_output_from_file("tests/resources/memin.txt")
+    runner.set_input_data_from_file(f"{TESTS_BASE_FOLDER}/resources/fib.asm")
+    runner.set_expected_output_from_file(f"{TESTS_BASE_FOLDER}/resources/memin.txt")
     runner.run()
 
 
