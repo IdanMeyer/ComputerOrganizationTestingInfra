@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 
 
 
@@ -61,9 +62,17 @@ class Assembler(object):
         self.input_data = input_data
 
 
+    def _get_label_from_line(self, line):
+        potential_label = None
+        # Check if there is a label at line
+        if ":" in line:
+            potential_label = line.split(":")[0]
+        return potential_label
+
     def first_phase(self):
         current_address = 0
         label_to_address = {}
+
         for line in self.input_data.splitlines():
             assembly_line = AssemblyLine(line)
             if assembly_line.label is not None:
@@ -88,39 +97,53 @@ class Assembler(object):
         return output
 
 
+    def remove_blank_lines(self):
+        input_data_without_blank_lines = []
+        previous_line_label = ""
+
+        for line in self.input_data.splitlines():
+            line = _remove_comments_from_line(line).strip()
+            # If line is blank, continue
+            if line == "":
+                continue
+
+            # Add label from previous line if needed
+            if previous_line_label != "":
+                if len(line.split()) == 6:
+                    raise AssemblerException("Trying to set 2 labels for the same line")
+                line = f"{previous_line_label}: {line}"
+                previous_line_label = ""
+
+            # If line contains only a label, add it to the next line
+            potential_label = self._get_label_from_line(line)
+            if potential_label is not None:
+                parts = line.split()
+                if len(parts) == 1:
+                    # Should save label to the next line
+                    previous_line_label = potential_label
+                    continue
+
+            input_data_without_blank_lines.append(line)
+
+
+        self.input_data = os.linesep.join(input_data_without_blank_lines)
+
+        return self.input_data
+
     def run(self):
+        self.remove_blank_lines()
         # Returns memin.txt file
         label_to_address = self.first_phase()
         output = self.second_phase(label_to_address)
         print("Output:")
         print(output)
         return output
-        # self.finalize()
 
 
 class AssemblerTestRunner(object):
     def __init__(self, assembler_path, should_compile=False):
         self.assembler = Assembler()
         self.input_data = None
-
-    def set_input_data_from_str(self, input_data):
-        self.input_data = input_data
-        self.assembler.set_input_data(self.input_data)
-
-    def set_input_data_from_file(self, file_path):
-        with open(file_path, "r") as f:
-            input_data = f.read()
-        self.set_input_data_from_str(input_data)
-
-    def run(self, input_data):
-        raise AssemblerException("Not implemented yet")
-
-
-class PythonAssemblerTestRunner(AssemblerTestRunner):
-    def __init__(self, assembler_path, should_compile=False):
-        self.assembler = Assembler()
-        self.input_data = ""
-        self.expected_output = ""
 
     def set_input_data_from_str(self, input_data):
         self.input_data = input_data
@@ -138,6 +161,16 @@ class PythonAssemblerTestRunner(AssemblerTestRunner):
         with open(file_path, "r") as f:
             expected_output = f.read()
         self.set_expected_output_from_str(expected_output)
+
+    def run(self, input_data):
+        raise AssemblerException("Not implemented yet")
+
+
+class PythonAssemblerTestRunner(AssemblerTestRunner):
+    def __init__(self, assembler_path, should_compile=False):
+        self.assembler = Assembler()
+        self.input_data = ""
+        self.expected_output = ""
 
     def run(self):
         python_assembler_output = self.assembler.run()
@@ -272,6 +305,8 @@ class CommandIFormat(object):
         return s
 
 
+def _remove_comments_from_line(line):
+    return line.split('#', 1)[0]
 
 
 class AssemblyLine(object):
@@ -294,9 +329,14 @@ class AssemblyLine(object):
             return 2
         return 1
 
+    def _replace_tabs_with_spaces(self, line):
+        return line.replace("\t", " ")
+
     def _parse_line(self, raw_line):
-        line_without_comments = raw_line.split('#', 1)[0]
-        parts = line_without_comments.split()
+        line_without_comments = _remove_comments_from_line(raw_line)
+        line_without_tabs = self._replace_tabs_with_spaces(line_without_comments)
+
+        parts = line_without_tabs.split()
 
         if len(parts) not in [5,6]:
             raise AssemblerException(f"Invalid amount of parts in assembly line: {self.raw_line}")
