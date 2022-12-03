@@ -126,6 +126,9 @@ def test_assembler_line_with_comments(tmp_path):
     runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
     command += f"{generate_random_command(newline=False)}#Some comment\n"
     command += f"{generate_random_command(newline=False)}#######Some comment\n"
+    command += f"{generate_random_command(newline=False)}\t\t\t #######\n"
+    command += f"{generate_random_command(newline=False)}    #    \n"
+    command += f"{generate_random_command(newline=False)}#  #  #  # AA\n"
     runner.set_input_data_from_str(command)
     runner.run()
 
@@ -142,11 +145,12 @@ def test_assembler_long_line(tmp_path):
     print(command)
     runner.run()
 
+
 @pytest.mark.sanity
 @pytest.mark.assembler
 @pytest.mark.parametrize("max_label_length", [5, 10, 20])
 @pytest.mark.parametrize("extra_label_calls", [0, 30, 50])
-def test_assembler_labels(tmp_path, max_label_length, extra_label_calls):
+def test_assembler_many_labels(tmp_path, max_label_length, extra_label_calls):
     # TODO: Adding label at the first without any commands before it (address zero) cause seg fault
     command = ""
     command += generate_random_command()
@@ -160,8 +164,32 @@ def test_assembler_labels(tmp_path, max_label_length, extra_label_calls):
     for _ in range(extra_label_calls):
         command += generate_random_command_with_label(random.choice(labels_names))
 
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    runner.set_input_data_from_str(command)
+    print(command)
+    runner.run()
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+def test_assembler_label_in_the_middle(tmp_path):
+    label_name = "SomeLabel"
+    command = ""
+    for _ in range(5):
+        command += generate_random_command_with_label(label_name)
+        command += generate_random_command()
+        command += generate_random_command_with_label(label_name)
+        command += generate_random_command_with_label(label_name)
+    command += f"{label_name}:\n"
+    for _ in range(5):
+        command += generate_random_command_with_label(label_name)
+        command += generate_random_command()
+        command += generate_random_command()
+        command += generate_random_command_with_label(label_name)
+        command += generate_random_command_with_label(label_name)
 
     runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
     runner.set_input_data_from_str(command)
     print(command)
     runner.run()
+
+
