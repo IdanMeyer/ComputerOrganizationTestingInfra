@@ -177,13 +177,15 @@ class Assembler(object):
 
 class AssemblerTestRunner(object):
     def __init__(self, assembler_path, test_folder, should_compile=False):
-        self.c_assembler = assembler_path
+        self.c_assembler = os.path.realpath(assembler_path)
         self.assembler = Assembler()
         self.input_data = None
         self.expected_output = None
         self.test_folder = test_folder
 
     def execute_c_assembler(self, cmd_args):
+        with open (os.path.join(self.test_folder, "test.asm"), "w") as f:
+            f.write(self.input_data)
         command = ["cd", self.test_folder, "&&", self.c_assembler] + cmd_args
         # TODO: change this to use Popen instead of os.system
         result = os.system(" ".join(command))
