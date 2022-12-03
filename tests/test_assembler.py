@@ -1,6 +1,10 @@
 import pytest
 import pathlib
+import random
+import os
+
 from Infra.assembler_wrapper import AssemblerTestRunner, AssemblyLine, PythonAssemblerTestRunner, OPCODE_TO_NUMBER, REGISTER_TO_NUMBER
+from Infra import utils
 
 # ASSEMBLER_PATH = "<assembler_path>"
 ASSEMBLER_PATH = "../ComputerOrganizationProcessor/build/assembler"
@@ -90,4 +94,74 @@ def test_assembler_imm_value_range(tmp_path, imm):
 def test_assembler_imm_in_all_regs(tmp_path, imm):
     runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
     runner.set_input_data_from_str(f"add $imm, $imm, $imm, {imm}")
+    runner.run()
+
+def generate_random_command(newline=True):
+    opcode = random.choice([op for op in OPCODE_TO_NUMBER.keys()])
+    rt = random.choice([reg for reg in REGISTER_TO_NUMBER.keys()])
+    rs = random.choice([reg for reg in REGISTER_TO_NUMBER.keys()])
+    rd = random.choice([reg for reg in REGISTER_TO_NUMBER.keys()])
+    command = f"{opcode} {rt}, {rs}, {rd}, 0"
+    if newline:
+        command += os.linesep
+
+    return command
+
+def generate_random_command_with_label(label, newline=True):
+    opcode = random.choice([op for op in OPCODE_TO_NUMBER.keys()])
+    rt = random.choice([reg for reg in REGISTER_TO_NUMBER.keys() if reg != "$imm"])
+    rs = random.choice([reg for reg in REGISTER_TO_NUMBER.keys() if reg != "$imm"])
+    rd = random.choice([reg for reg in REGISTER_TO_NUMBER.keys() if reg != "$imm"])
+    command = f"{opcode} {rt}, {rs}, {rd}, {label}"
+
+    if newline:
+        command += os.linesep
+
+    return command
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+def test_assembler_line_with_comments(tmp_path):
+    command = ""
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    command += f"{generate_random_command(newline=False)}#Some comment\n"
+    command += f"{generate_random_command(newline=False)}#######Some comment\n"
+    runner.set_input_data_from_str(command)
+    runner.run()
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+def test_assembler_long_line(tmp_path):
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    # Add comment followed by 'A' for entire command max length
+    command = generate_random_command(newline=False)
+    command += "#"
+    # Max line length is 300, but we need extra space for the \0
+    command += (299-len(command)) * 'A'
+    runner.set_input_data_from_str(command)
+    print(command)
+    runner.run()
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+@pytest.mark.parametrize("max_label_length", [5, 10, 20])
+@pytest.mark.parametrize("extra_label_calls", [0, 30, 50])
+def test_assembler_labels(tmp_path, max_label_length, extra_label_calls):
+    # TODO: Adding label at the first without any commands before it (address zero) cause seg fault
+    command = ""
+    command += generate_random_command()
+    labels_names = [utils.get_random_string(x) for x in range(1, max_label_length)]
+    random.shuffle(labels_names)
+    for label in labels_names:
+        command += f"{label}:\n"
+        command += generate_random_command_with_label(label)
+
+    # Add extra calls to labels
+    for _ in range(extra_label_calls):
+        command += generate_random_command_with_label(random.choice(labels_names))
+
+
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    runner.set_input_data_from_str(command)
+    print(command)
     runner.run()
