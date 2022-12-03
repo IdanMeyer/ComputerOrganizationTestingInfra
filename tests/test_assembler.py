@@ -73,3 +73,21 @@ def test_assembler_all_ops_and_regs(tmp_path, opcode, rt, rs, rd):
     runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
     runner.set_input_data_from_str(f"{opcode} {rt}, {rs}, {rd}, 0")
     runner.run()
+
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+@pytest.mark.parametrize("imm", [100, 0, -100, 0x100, -0x100,
+                                 0xfffff, 524287, -524287])
+def test_assembler_imm_value_range(tmp_path, imm):
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    runner.set_input_data_from_str(f"add $zero, $zero, $imm, {imm}")
+    runner.run()
+
+@pytest.mark.sanity
+@pytest.mark.assembler
+@pytest.mark.parametrize("imm", [0, 0x1, -53, 0x1337])
+def test_assembler_imm_in_all_regs(tmp_path, imm):
+    runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
+    runner.set_input_data_from_str(f"add $imm, $imm, $imm, {imm}")
+    runner.run()
