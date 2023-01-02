@@ -183,9 +183,11 @@ class AssemblerTestRunner(object):
         self.expected_output = None
         self.test_folder = test_folder
 
-    def execute_c_assembler(self, cmd_args):
-        with open (os.path.join(self.test_folder, "test.asm"), "w") as f:
+    def execute_c_assembler(self, test_asm_path, memin_txt_path):
+        with open (test_asm_path, "w") as f:
             f.write(self.input_data)
+        test_asm_path = os.path.join(self.test_folder, "test.asm")
+        cmd_args = [test_asm_path, memin_txt_path]
         command = ["cd", self.test_folder, "&&", self.c_assembler] + cmd_args
         # TODO: change this to use Popen instead of os.system
         result = os.system(" ".join(command))
@@ -194,8 +196,7 @@ class AssemblerTestRunner(object):
 
 
         # Return output from memin
-        memin_path = os.path.join(self.test_folder, "memin.txt")
-        with open(memin_path, "r") as f:
+        with open(memin_txt_path, "r") as f:
             memin_data =  f.read()
         return memin_data
 
@@ -218,7 +219,9 @@ class AssemblerTestRunner(object):
         if not expected_output:
             expected_output = self.assembler.run()
 
-        c_assembler_output = self.execute_c_assembler([])
+        test_asm_path = os.path.join(self.test_folder, "test.asm")
+        memin_txt_path = os.path.join(self.test_folder, "memin.txt")
+        c_assembler_output = self.execute_c_assembler(test_asm_path, memin_txt_path)
         assert expected_output == c_assembler_output
 
 
@@ -235,7 +238,6 @@ class PythonAssemblerTestRunner(AssemblerTestRunner):
         with open(file_path, "r") as f:
             expected_output = f.read()
         self.set_expected_output_from_str(expected_output)
-
 
     def run(self):
         python_assembler_output = self.assembler.run()
