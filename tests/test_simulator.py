@@ -15,11 +15,43 @@ TESTS_BASE_FOLDER = pathlib.Path(__file__).parent.resolve()
 
 @pytest.mark.sanity
 @pytest.mark.simulator
-def test_simulator_sanity(tmp_path):
+def test_simulator_halt(tmp_path):
     runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
     runner.set_input_data_from_str("halt $zero, $zero, $zero, 0")
-    # runner.set_expected_output("15000\n")
-    runner.run()
+    runner.run({"$v0":0})
+    runner.validate_all_regs_zero()
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+def test_simulator_add_sanity(tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    asm_input = os.linesep.join([
+        "add $t0, $zero, $imm, 10",
+        "add $t1, $zero, $imm, -1",
+        "add $t2, $zero, $imm, -78",
+        "add $s0, $zero, $imm, 254236",
+        "add $s1, $zero, $imm, -0x100",
+        "add $s2, $zero, $imm, 0x70",
+        "halt $zero, $zero, $zero, 0"
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":10, "$t1":-1,  "$t2":-78, "$s0":254236, "$s1":-0x100,"$s2":0x70})
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+def test_simulator_mul_sanity(tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    asm_input = os.linesep.join([
+        "add $t0, $zero, $imm, 10",
+        "add $t1, $zero, $imm, -1",
+        "mul $t2, $t0, $t1, 0", # t2 should be -10
+        "mul $t2, $t2, $t2, 0", # t2 should be +100
+        "mul $t2, $t2, $imm, 2", # t2 should be +200
+        "mul $s0, $t2, $imm, -2", # t2 should be -400
+        "halt $zero, $zero, $zero, 0"
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":10, "$t1":-1,  "$t2":200, "$s0":-400})
 
 
 
