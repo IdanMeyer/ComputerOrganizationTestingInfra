@@ -123,9 +123,9 @@ class Assembler(object):
             line.convert_label_to_address(label_to_address)
             line_bytes = line.serialize_to_bytes()
             if len(line_bytes) == 5:
-                output += f"{line_bytes}\n"
+                output += f"{line_bytes}{os.linesep}"
             elif len(line_bytes) == 10:
-                output += f"{line_bytes[0:5]}\n{line_bytes[5:10]}\n"
+                output += f"{line_bytes[0:5]}{os.linesep}{line_bytes[5:10]}{os.linesep}"
             else:
                 raise AssemblerException(f"Invalid amount of bytes in line: {line}")
 
@@ -222,7 +222,7 @@ class AssemblerTestRunner(object):
         test_asm_path = os.path.join(self.test_folder, "test.asm")
         memin_txt_path = os.path.join(self.test_folder, "memin.txt")
         c_assembler_output = self.execute_c_assembler(test_asm_path, memin_txt_path)
-        assert expected_output == c_assembler_output
+        assert expected_output.replace(os.linesep, "\n") == c_assembler_output
 
 
 class PythonAssemblerTestRunner(AssemblerTestRunner):
@@ -241,7 +241,7 @@ class PythonAssemblerTestRunner(AssemblerTestRunner):
 
     def run(self):
         python_assembler_output = self.assembler.run()
-        assert self.expected_output == python_assembler_output
+        assert self.expected_output == python_assembler_output.replace(os.linesep, "\n")
 
 
 def num_to_bin(num, wordsize):
@@ -322,8 +322,8 @@ class CommandRFormat(object):
         s+= packed_data[12:16]
         s+= "|"
         s+= packed_data[16:20]
-        s+= "|\n"
-        s+= "|opcode  |rd  |rs  |rt  |\n"
+        s+= f"|{os.linesep}"
+        s+= f"|opcode  |rd  |rs  |rt  |{os.linesep}"
         return s
 
 class CommandIFormat(object):
@@ -366,8 +366,8 @@ class CommandIFormat(object):
         s+= packed_data[16:20]
         s+= "|"
         s+= packed_data[20:40]
-        s+= "|\n"
-        s+= "|opcode  |rd  |rs  |rt  |imm                 |\n"
+        s+= f"|{os.linesep}"
+        s+= f"|opcode  |rd  |rs  |rt  |imm                 |{os.linesep}"
         return s
 
 

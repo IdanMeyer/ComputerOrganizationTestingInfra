@@ -7,8 +7,8 @@ from Infra.assembler_wrapper import AssemblerTestRunner, AssemblyLine, PythonAss
 from Infra import utils
 from Infra.simulator_wrapper import SimulatorTestRunner
 
-ASSEMBLER_PATH = "../ComputerOrganizationProcessor/build/assembler"
-SIMULATOR_PATH = "../ComputerOrganizationProcessor/build/simulator"
+ASSEMBLER_PATH = r"..\ComputerOrganizationProcessor\VisualStudio\Assembler\x64\Debug\Assembler.exe"
+SIMULATOR_PATH = r"..\ComputerOrganizationProcessor\VisualStudio\Simulator\x64\Debug\Simulator.exe"
 
 TESTS_BASE_FOLDER = pathlib.Path(__file__).parent.resolve()
 NUMBER_OF_BITS_IN_REGISTER = 32

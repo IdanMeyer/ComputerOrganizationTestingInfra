@@ -7,7 +7,7 @@ from Infra.assembler_wrapper import AssemblerTestRunner, AssemblyLine, PythonAss
 from Infra import utils
 
 # ASSEMBLER_PATH = "<assembler_path>"
-ASSEMBLER_PATH = "../ComputerOrganizationProcessor/build/assembler"
+ASSEMBLER_PATH =  r"..\ComputerOrganizationProcessor\VisualStudio\Assembler\x64\Debug\Assembler.exe"
 
 TESTS_BASE_FOLDER = pathlib.Path(__file__).parent.resolve()
 
