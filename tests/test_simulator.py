@@ -264,3 +264,64 @@ def test_simulator_word_command_and_lw_int_stress(address, tmp_path):
                                  ])
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":address, "$t2":data})
+
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_beq_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_equal = int(value_1 == value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"beq $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":is_equal})
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_bne_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_equal = int(value_1 == value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"bne $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":not is_equal})
+
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5])
+@pytest.mark.parametrize("value_2", [5])
+def test_simulator_jal_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"jal $ra, $imm, $zero, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":1, "$ra":8})
