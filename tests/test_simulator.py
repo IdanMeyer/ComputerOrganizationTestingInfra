@@ -305,6 +305,88 @@ def test_simulator_bne_sanity(value_1, value_2, tmp_path):
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":value_1, "$t1":value_2, "$t2":not is_equal})
 
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_blt_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_less_then = int(value_1 < value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"blt $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":is_less_then})
+
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_bgt_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_greater_then = int(value_1 > value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"bgt $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":is_greater_then})
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_ble_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_less_then = int(value_1 <= value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"ble $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":is_less_then})
+
+
+@pytest.mark.simulator
+@pytest.mark.sanity
+@pytest.mark.parametrize("value_1", [5,6])
+@pytest.mark.parametrize("value_2", [5,6])
+def test_simulator_bge_sanity(value_1, value_2, tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+
+    is_greater_then = int(value_1 >= value_2)
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {value_1}",
+        f"add $t1, $zero, $imm, {value_2}",
+        f"add $t2, $zero, $imm, 1",
+        f"bge $imm, $t0, $t1, Exit",
+        f"add $t2, $zero, $imm, 0",
+        f"Exit:",
+        f"halt $zero, $zero, $zero, 0",
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":value_1, "$t1":value_2, "$t2":is_greater_then})
+
 
 @pytest.mark.simulator
 @pytest.mark.sanity
@@ -324,3 +406,30 @@ def test_simulator_jal_sanity(value_1, value_2, tmp_path):
                                  ])
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":value_1, "$t1":value_2, "$t2":1, "$ra":8})
+
+
+
+def add_overflow(a,b,num_bits):
+    rangeMax = 2**(num_bits-1)
+    result = a + b
+    if result >= rangeMax:
+        return int((result) % rangeMax)
+    else:
+        return result
+
+@pytest.mark.stress
+@pytest.mark.simulator
+@pytest.mark.parametrize("iter_number", range(100))
+def test_simulator_add_stress(tmp_path, iter_number):
+    number_1 = random.randint(-2**17, +2**17)
+    number_2 = random.randint(-2**17, +2**17)
+
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {number_1}",
+        f"add $t1, $zero, $imm, {number_2}",
+        f"add $t2, $t0, $t1, 0",
+        "halt $zero, $zero, $zero, 0"
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":number_1, "$t1":number_2,  "$t2":add_overflow(number_1, number_2, 20)})

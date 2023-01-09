@@ -78,7 +78,6 @@ class SimulatorTestRunner(object):
         if result != 0:
             raise SimulatorException(f"C simulator failed")
 
-
         # Return output from memout
         with open(self.memout_txt_path, "r") as f:
             memout_data =  f.read()
