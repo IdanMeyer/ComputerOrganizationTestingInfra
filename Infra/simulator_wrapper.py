@@ -38,7 +38,7 @@ class SimulatorTestRunner(object):
         with open(self.diskin_txt_path, "wb") as f:
             f.write(input_diskin.encode())
 
-    def generate_random_diskin_data(self, disk_size=2048):
+    def generate_random_diskin_data(self, disk_size=128*128):
         rnd_numbers = [random.randint(0, 2**20) for x in range(disk_size)]
         diskin_list = [f"%05x"%(x) for x in rnd_numbers]
         diskin_data = os.linesep.join(diskin_list)
