@@ -96,6 +96,11 @@ class SimulatorTestRunner(object):
             leds = f.read().splitlines()
         return [x.decode().split()[1] for x in leds]
 
+    def read_display7seg(self):
+        with open(self.display7seg_txt_path, "rb") as f:
+            display7seg = f.read().splitlines()
+        return [x.decode().split()[1] for x in display7seg]
+
     def execute_c_simulator(self):
         Path(self.irq2in_txt_path).touch()
         Path(self.diskin_txt_path).touch()

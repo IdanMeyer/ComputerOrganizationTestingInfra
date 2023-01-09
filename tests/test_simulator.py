@@ -580,11 +580,13 @@ def test_simulator_disk_write_stress(tmp_path, base_address, sector):
     disk_write(tmp_path, base_address, sector)
 
 
+# TODO: When writing 0x000ffff it is auto-completed to ffffffff (because of 1s complement). Is it OK?
 @pytest.mark.sanity
 @pytest.mark.simulator
-def test_simulator_leds_sanity(tmp_path):
+@pytest.mark.parametrize("value", [0x00005678, 0x0000aaaa, 1, 2, 3, 4])
+def test_simulator_leds_sanity(tmp_path, value):
     runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
-    led_states = [0x0000bbcc, 0x00005678, 0x00005678<<1, 0x00005678<<2, 0x00005678<<3, 0x00005678<<4]
+    led_states = [0x0000bbcc, value, value<<1, value<<2, value<<3, value<<4]
     asm_input = os.linesep.join([
         f"in $t1, $zero, $imm, 9",
         f"add $t1, $zero, $imm, {led_states[0]}",
@@ -608,3 +610,35 @@ def test_simulator_leds_sanity(tmp_path):
     leds = runner.read_leds()
     for i, _ in enumerate(led_states):
         assert int(leds[i], 16) == led_states[i]
+
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+
+@pytest.mark.parametrize("value", [0x00005678, 0x0000aaaa, 1, 2, 3, 4])
+def test_simulator_display_7_seg_sanity(tmp_path, value):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    display7seg_states = [0x0000bbcc, value, value<<1, value<<2, value<<3, value<<4]
+    asm_input = os.linesep.join([
+        f"in $t1, $zero, $imm, 10",
+        f"add $t1, $zero, $imm, {display7seg_states[0]}",
+        f"out $t1, $zero, $imm, 10",
+        f"add $t1, $zero, $imm, {display7seg_states[1]}",
+        f"out $t1, $zero, $imm, 10",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 10",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 10",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 10",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 10",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 10",
+        "halt $zero, $zero, $zero, 10"])
+
+    runner.set_input_data_from_str(asm_input)
+    runner.run()
+    display7seg = runner.read_display7seg()
+    for i, _ in enumerate(display7seg_states):
+        assert int(display7seg[i], 16) == display7seg_states[i]
