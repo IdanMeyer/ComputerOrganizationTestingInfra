@@ -1,6 +1,7 @@
 import os
 
 from Infra.assembler_wrapper import REGISTER_TO_NUMBER, AssemblerTestRunner
+from pathlib import Path
 
 class SimulatorException(Exception):
     pass
@@ -18,6 +19,15 @@ class SimulatorTestRunner(object):
         self.regout_txt_path = os.path.join(self.test_folder, "regout.txt")
         self.trace_txt_path = os.path.join(self.test_folder, "trace.txt")
         self.cycles_txt_path = os.path.join(self.test_folder, "cycles.txt")
+        self.diskin_txt_path = os.path.join(self.test_folder, "diskin.txt")
+        self.irq2in_txt_path = os.path.join(self.test_folder, "irq2in.txt")
+        self.hwregtrace_txt_path = os.path.join(self.test_folder, "hwregtrace.txt")
+        self.leds_txt_path = os.path.join(self.test_folder, "leds.txt")
+        self.display7seg_txt_path = os.path.join(self.test_folder, "display7seg.txt")
+        self.diskout_txt_path = os.path.join(self.test_folder, "diskout.txt")
+        self.monitor_txt_path = os.path.join(self.test_folder, "monitor.txt")
+
+        # sim.exe memin.txt diskin.txt irq2in.txt memout.txt regout.txt trace.txt hwregtrace.txt cycles.txt leds.txt display7seg.txt diskout.txt monitor.txt
 
     def set_input_data_from_str(self, input_data):
         self.assembler_runner.set_input_data_from_str(input_data)
@@ -55,8 +65,13 @@ class SimulatorTestRunner(object):
         self._validate_regs({key : 0 for key, value in REGISTER_TO_NUMBER.items() if value >=2})
 
     def execute_c_simulator(self):
-        cmd_args = [self.memin_txt_path, self.memout_txt_path, self.regout_txt_path,
-                    self.trace_txt_path, self.cycles_txt_path]
+        Path(self.irq2in_txt_path).touch()
+        Path(self.diskin_txt_path).touch()
+
+        cmd_args = [self.memin_txt_path, self.diskin_txt_path, self.irq2in_txt_path,
+                    self.memout_txt_path, self.regout_txt_path, self.trace_txt_path,
+                    self.hwregtrace_txt_path, self.cycles_txt_path, self.leds_txt_path,
+                    self.display7seg_txt_path, self.diskout_txt_path, self.monitor_txt_path]
         command = ["cd", self.test_folder, "&&", self.c_simulator_path] + cmd_args
         # TODO: change this to use Popen instead of os.system
         result = os.system(" ".join(command))

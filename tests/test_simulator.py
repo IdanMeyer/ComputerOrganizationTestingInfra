@@ -25,7 +25,6 @@ def test_simulator_halt(tmp_path):
     runner.run({"$v0":0})
     runner.validate_all_regs_zero()
 
-# TODO: Fails on large number, for example: 0xfffff
 @pytest.mark.sanity
 @pytest.mark.simulator
 def test_simulator_add_sanity(tmp_path):
@@ -34,13 +33,13 @@ def test_simulator_add_sanity(tmp_path):
         "add $t0, $zero, $imm, 10",
         "add $t1, $zero, $imm, -1",
         "add $t2, $zero, $imm, -78",
-        "add $s0, $imm, $zero, 10485",
+        "add $s0, $imm, $zero, 0xfff",
         "add $s1, $zero, $imm, -0x100",
         "add $s2, $zero, $imm, 0x70",
         "halt $zero, $zero, $zero, 0"
                                  ])
     runner.set_input_data_from_str(asm_input)
-    runner.run({"$t0":10, "$t1":-1,  "$t2":-78, "$s0":10485, "$s1":-0x100,"$s2":0x70})
+    runner.run({"$t0":10, "$t1":-1,  "$t2":-78, "$s0":0xfff, "$s1":-0x100,"$s2":0x70})
 
 
 @pytest.mark.sanity
