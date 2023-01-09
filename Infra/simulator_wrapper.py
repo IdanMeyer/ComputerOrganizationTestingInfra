@@ -81,6 +81,20 @@ class SimulatorTestRunner(object):
             memout = f.read().splitlines()
         return memout
 
+    def read_memin(self):
+        with open(self.memin_txt_path, "rb") as f:
+            memin = f.read().splitlines()
+        return memin
+
+    def read_diskout(self):
+        with open(self.diskout_txt_path, "rb") as f:
+            memout = f.read().splitlines()
+        return memout
+
+    def read_leds(self):
+        with open(self.leds_txt_path, "rb") as f:
+            leds = f.read().splitlines()
+        return [x.decode().split()[1] for x in leds]
 
     def execute_c_simulator(self):
         Path(self.irq2in_txt_path).touch()

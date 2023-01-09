@@ -437,8 +437,6 @@ def test_simulator_add_stress(tmp_path, iter_number):
 
 def disk_read(tmp_path, ram_buffer_address, sector):
     runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
-    ram_buffer_address = 0x100
-    sector = 2
     diskin_data = runner.generate_random_diskin_data()
     asm_input = f"""add $s0, $zero, $zero, 0 # Initialize s0 to zero
     add $t0, $zero, $imm, 6
@@ -461,13 +459,13 @@ IRQ_HANDLER:
     runner.run()
     memout = runner.read_memout()
     for i in range(SECTOR_SIZE):
-        assert memout[SECTOR_SIZE*sector+i] == diskin_data[ram_buffer_address+i].upper()
+        assert diskin_data[SECTOR_SIZE*sector+i].upper() == memout[ram_buffer_address+i]
 
 
 @pytest.mark.sanity
 @pytest.mark.simulator
 @pytest.mark.parametrize("base_address", [0x100])
-@pytest.mark.parametrize("sector", range(0, 1))
+@pytest.mark.parametrize("sector", [0,2])
 def test_simulator_disk_read_sanity(tmp_path, base_address, sector):
     disk_read(tmp_path, base_address, sector)
 
@@ -478,4 +476,135 @@ def test_simulator_disk_read_sanity(tmp_path, base_address, sector):
 @pytest.mark.parametrize("sector", range(0, NUMBER_OF_SECTORS))
 def test_simulator_disk_read_stress(tmp_path, base_address, sector):
     disk_read(tmp_path, base_address, sector)
-    disk_read(tmp_path, base_address, sector)
+
+
+def disk_write(tmp_path, ram_buffer_address, sector):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    asm_input = f"""add $s0, $zero, $zero, 0 # Initialize s0 to zero
+    add $t0, $zero, $imm, 6
+    out $imm, $zero, $t0, IRQ_HANDLER # enable irq handler
+    add $t0, $zero, $imm, 1
+    out $imm, $zero, $t0, 1 # enable irq1
+    add $t0, $zero, $imm, 15
+    out $imm, $zero, $t0, {sector} # enable disk sector 0
+    add $t0, $zero, $imm, 16
+    out $imm, $zero, $t0, {ram_buffer_address} # enable disk buffer 0
+    add $t0, $zero, $imm, 14
+    out $imm, $zero, $t0, 2 # enable disk cmd for write
+L1:
+	beq $imm, $s0,$zero,L1 # stay here till last write
+	halt $zero, $zero, $zero, 0 # will reach here when done
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+    add $t0, $zero, $imm, 6 ## Adding command just for more data
+IRQ_HANDLER:
+    add $s0, $zero, $imm, 1
+    reti $zero, $zero, $zero, 0 #return from irq call"""
+    runner.set_input_data_from_str(asm_input)
+    runner.run()
+    diskout = runner.read_diskout()
+    memin = runner.read_memin()
+
+    for i in range(SECTOR_SIZE):
+        if ram_buffer_address + i < len(memin):
+            assert diskout[SECTOR_SIZE*sector+i] == memin[ram_buffer_address+i].upper()
+        else:
+            assert diskout[SECTOR_SIZE*sector+i] == b'00000'
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+@pytest.mark.parametrize("base_address", [0])
+@pytest.mark.parametrize("sector", [0,2])
+def test_simulator_disk_write_sanity(tmp_path, base_address, sector):
+    disk_write(tmp_path, base_address, sector)
+
+
+@pytest.mark.stress
+@pytest.mark.simulator
+@pytest.mark.parametrize("base_address", [0, 0x30])
+@pytest.mark.parametrize("sector", range(SECTOR_SIZE))
+def test_simulator_disk_write_stress(tmp_path, base_address, sector):
+    disk_write(tmp_path, base_address, sector)
+
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+def test_simulator_leds_sanity(tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    led_states = [0x0000bbcc, 0x00005678, 0x00005678<<1, 0x00005678<<2, 0x00005678<<3, 0x00005678<<4]
+    asm_input = os.linesep.join([
+        f"in $t1, $zero, $imm, 9",
+        f"add $t1, $zero, $imm, {led_states[0]}",
+        f"out $t1, $zero, $imm, 9",
+        f"add $t1, $zero, $imm, {led_states[1]}",
+        f"out $t1, $zero, $imm, 9",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 9",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 9",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 9",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 9",
+        f"sll $t1, $t1, $imm, 1",
+        f"out $t1, $zero, $imm, 9",
+        "halt $zero, $zero, $zero, 0"])
+
+    runner.set_input_data_from_str(asm_input)
+    runner.run()
+    leds = runner.read_leds()
+    for i, _ in enumerate(led_states):
+        assert int(leds[i], 16) == led_states[i]
