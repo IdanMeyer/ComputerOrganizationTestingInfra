@@ -1,4 +1,5 @@
 import os
+import random
 
 from Infra.assembler_wrapper import REGISTER_TO_NUMBER, AssemblerTestRunner
 from pathlib import Path
@@ -35,6 +36,17 @@ class SimulatorTestRunner(object):
     def set_input_data_from_file(self, file_path):
         self.assembler_runner.set_input_data_from_file(file_path)
 
+    def set_diskin(self, input_diskin):
+        with open(self.diskin_txt_path, "wb") as f:
+            f.write(input_diskin.encode())
+
+    def generate_random_diskin_data(self, disk_size=2048):
+        rnd_numbers = [random.randint(0, 2**20) for x in range(disk_size)]
+        diskin_list = [f"%05x"%(x) for x in rnd_numbers]
+        diskin_data = os.linesep.join(diskin_list)
+        self.set_diskin(diskin_data)
+        return [x.encode() for x in diskin_list]
+
     def run(self, regs_to_validate=None):
         c_assembler_output = self.assembler_runner.execute_c_assembler(
             self.test_asm_path,
@@ -63,6 +75,12 @@ class SimulatorTestRunner(object):
 
     def validate_all_regs_zero(self):
         self._validate_regs({key : 0 for key, value in REGISTER_TO_NUMBER.items() if value >=2})
+
+    def read_memout(self):
+        with open(self.memout_txt_path, "rb") as f:
+            memout = f.read().splitlines()
+        return memout
+
 
     def execute_c_simulator(self):
         Path(self.irq2in_txt_path).touch()

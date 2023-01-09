@@ -15,6 +15,8 @@ SIMULATOR_PATH = "../ComputerOrganizationProcessor/build/simulator"
 
 TESTS_BASE_FOLDER = pathlib.Path(__file__).parent.resolve()
 NUMBER_OF_BITS_IN_REGISTER = 32
+SECTOR_SIZE = 128
+NUMBER_OF_SECTORS = 128
 
 
 @pytest.mark.sanity
@@ -407,8 +409,6 @@ def test_simulator_jal_sanity(value_1, value_2, tmp_path):
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":value_1, "$t1":value_2, "$t2":1, "$ra":8})
 
-
-
 def add_overflow(a,b,num_bits):
     rangeMax = 2**(num_bits-1)
     result = a + b
@@ -433,3 +433,49 @@ def test_simulator_add_stress(tmp_path, iter_number):
                                  ])
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":number_1, "$t1":number_2,  "$t2":add_overflow(number_1, number_2, 20)})
+
+
+def disk_read(tmp_path, ram_buffer_address, sector):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    ram_buffer_address = 0x100
+    sector = 2
+    diskin_data = runner.generate_random_diskin_data()
+    asm_input = f"""add $s0, $zero, $zero, 0 # Initialize s0 to zero
+    add $t0, $zero, $imm, 6
+    out $imm, $zero, $t0, IRQ_HANDLER # enable irq handler
+    add $t0, $zero, $imm, 1
+    out $imm, $zero, $t0, 1 # enable irq1
+    add $t0, $zero, $imm, 15
+    out $imm, $zero, $t0, {sector} # enable disk sector {sector}
+    add $t0, $zero, $imm, 16
+    out $imm, $zero, $t0, {ram_buffer_address} # enable disk buffer 0
+    add $t0, $zero, $imm, 14
+    out $imm, $zero, $t0, 1 # enable disk cmd for read
+L1:
+	beq $imm, $s0,$zero,L1 # stay here till last write
+	halt $zero, $zero, $zero, 0 # will reach here when done
+IRQ_HANDLER:
+    add $s0, $zero, $imm, 1
+    reti $zero, $zero, $zero, 0 #return from irq call"""
+    runner.set_input_data_from_str(asm_input)
+    runner.run()
+    memout = runner.read_memout()
+    for i in range(SECTOR_SIZE):
+        assert memout[SECTOR_SIZE*sector+i] == diskin_data[ram_buffer_address+i].upper()
+
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+@pytest.mark.parametrize("base_address", [0x100])
+@pytest.mark.parametrize("sector", range(0, 1))
+def test_simulator_disk_read_sanity(tmp_path, base_address, sector):
+    disk_read(tmp_path, base_address, sector)
+
+
+@pytest.mark.stress
+@pytest.mark.simulator
+@pytest.mark.parametrize("base_address", [0x100, 0x273])
+@pytest.mark.parametrize("sector", range(0, NUMBER_OF_SECTORS))
+def test_simulator_disk_read_stress(tmp_path, base_address, sector):
+    disk_read(tmp_path, base_address, sector)
+    disk_read(tmp_path, base_address, sector)
