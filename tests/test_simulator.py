@@ -614,7 +614,6 @@ def test_simulator_leds_sanity(tmp_path, value):
 
 @pytest.mark.sanity
 @pytest.mark.simulator
-
 @pytest.mark.parametrize("value", [0x00005678, 0x0000aaaa, 1, 2, 3, 4])
 def test_simulator_display_7_seg_sanity(tmp_path, value):
     runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
@@ -642,3 +641,38 @@ def test_simulator_display_7_seg_sanity(tmp_path, value):
     display7seg = runner.read_display7seg()
     for i, _ in enumerate(display7seg_states):
         assert int(display7seg[i], 16) == display7seg_states[i]
+
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+@pytest.mark.parametrize("timer_time", [50, 70, 5000])
+@pytest.mark.parametrize("sleep_iter", [200, 800])
+def test_simulator_timer_sanity(tmp_path, sleep_iter, timer_time):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    # Very "far" numbers were chosen as we did no calulate exactly how many cycles pass
+    # between the start of the timer and the sleep.
+    expected_a2 =  int(timer_time < sleep_iter/2)
+    asm_input = os.linesep.join([
+        f"add $t2, $zero, $imm,  {timer_time} # set timer",
+        "out $t2, $zero, $imm, 13 # write to timermax",
+        "add $t2, $zero, $imm, L4 # $t1 = address of L4",
+        "out $t2, $zero, $imm, 6 # set irqhandler as L4",
+        "out $imm, $zero, $zero, 1	     	# enable irq0",
+        "add $t2, $zero, $imm, 1",
+        "out $t2, $zero, $imm, 11 # enable tiemrenable",
+
+        "add $t0, $zero, $zero, 0",
+        f"add $t1, $zero, $imm, {sleep_iter}",
+        "L1: # Loop for long exeuction time",
+        "add $t0, $t0, $imm, 1",
+        "blt $imm, $t0,$t1,L1",
+        "halt $zero, $zero, $zero, 0",
+        "L4:",
+        "out $zero, $zero, $imm, 3			# clear irq0 status",
+        "add $t2, $zero, $imm, 0",
+        "out $t2, $zero, $imm, 11 # disable tiemrenable",
+        "add $a2, $a2, $imm, 1				# save argument",
+        "reti $zero, $zero, $zero, 0			# return from interrupt",
+    ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$a2":expected_a2})

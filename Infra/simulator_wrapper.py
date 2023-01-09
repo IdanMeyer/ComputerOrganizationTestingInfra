@@ -28,8 +28,6 @@ class SimulatorTestRunner(object):
         self.diskout_txt_path = os.path.join(self.test_folder, "diskout.txt")
         self.monitor_txt_path = os.path.join(self.test_folder, "monitor.txt")
 
-        # sim.exe memin.txt diskin.txt irq2in.txt memout.txt regout.txt trace.txt hwregtrace.txt cycles.txt leds.txt display7seg.txt diskout.txt monitor.txt
-
     def set_input_data_from_str(self, input_data):
         self.assembler_runner.set_input_data_from_str(input_data)
 
@@ -100,6 +98,16 @@ class SimulatorTestRunner(object):
         with open(self.display7seg_txt_path, "rb") as f:
             display7seg = f.read().splitlines()
         return [x.decode().split()[1] for x in display7seg]
+
+    def read_hwregtrace(self):
+        with open(self.hwregtrace_txt_path, "rb") as f:
+            hwregtrace = f.read().splitlines()
+        return {x.decode().split()[0]:x.decode().split()[2] for x in hwregtrace}
+
+    def read_trace(self):
+        with open(self.trace_txt_path, "rb") as f:
+            trace = f.read().splitlines()
+        return trace
 
     def execute_c_simulator(self):
         Path(self.irq2in_txt_path).touch()
