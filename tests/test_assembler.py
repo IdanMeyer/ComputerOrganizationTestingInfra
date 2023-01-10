@@ -228,7 +228,8 @@ def test_assembler_word_command(tmp_path, address, value):
 
 @pytest.mark.sanity
 @pytest.mark.assembler
-def test_assembler_multiple_word_commands(tmp_path):
+@pytest.mark.parametrize("iter_number", range(10))
+def test_assembler_multiple_word_commands(tmp_path, iter_number):
     runner = AssemblerTestRunner(ASSEMBLER_PATH, tmp_path.as_posix())
     command = ""
 
@@ -237,13 +238,12 @@ def test_assembler_multiple_word_commands(tmp_path):
     command += generate_random_command()
     command += generate_word_command(0x30, 45)
     command += generate_random_command()
-    # TODO: Does not work when changing 300 and 301
     command += generate_word_command(300, 100)
-    command += generate_word_command(301, 101)
     command += generate_word_command(302, 102)
-    command += generate_word_command(303, 103)
-    command += generate_word_command(304, 104)
-
+    command += generate_word_command(301, 101)
+    command += generate_word_command(0x20, 35)
+    for i in range(iter_number):
+        command += generate_word_command(random.randint(0, 4095), random.randint(0, 127))
 
     runner.set_input_data_from_str(command)
     print(command)

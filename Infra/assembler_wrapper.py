@@ -90,14 +90,11 @@ class Assembler(object):
             address, data = line.split()[1:3]
             address, data = int(address), f"{int(data):05x}".upper()
 
-            # TODO: Check address not already set?
-
             # Fill empty lines with zeros if needed
-            while len(output_split_lines) < int(address):
+            while len(output_split_lines) <= int(address):
                 output_split_lines.append(f"{int(0):05x}".upper())
-            output_split_lines.append(data)
-
-
+            # output_split_lines.append(data)
+            output_split_lines[address] = data
         return os.linesep.join(output_split_lines) + os.linesep
 
 
