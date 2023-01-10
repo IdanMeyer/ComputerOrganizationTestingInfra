@@ -111,10 +111,10 @@ class SimulatorTestRunner(object):
             trace = f.read().splitlines()
         return trace
 
-    def set_irq2(self, original_path):
+    def copy_irq2_to_test_folder(self, original_path):
         shutil.copyfile(original_path, self.irq2in_txt_path)
 
-    def set_diskin(self, original_path):
+    def copy_diskin_to_test_folder(self, original_path):
         shutil.copyfile(original_path, self.diskin_txt_path)
 
     def execute_c_simulator(self):
