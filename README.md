@@ -6,14 +6,14 @@ Tests for Computer organization course at TAU.
 ## Getting Started
 * Clone the repository.
 * Install `python3`, `pip`, and `pytest`.
-* Edit ASSEMBLER_PATH  and SIMULATOR_PATH at tests/test_assembler.py and tests/test_simulator.py
+* Edit ASSEMBLER_PATH  and SIMULATOR_PATH at tests/test_assembler.py and tests/test_simulator.py to contain the paths of the compiled .exe paths
 * Executing tests via terminal (cmd or bash) from the root of this repo:
 ```
 python3 -m pytest test_simulator <path_to_test_file>
 ```
 * For example:
 ```
-python3 -m pytest test_simulator.py
+python3 -m pytest test_simulator.py 
 ```
 
 
@@ -26,7 +26,11 @@ python3 -m pytest test_simulator.py
 
 **This is how I usally execute the tests: (from the main directory of this repo)**
 ```
+# Running of all the sanity simulator tests:
 python3 -m pytest tests/test_simulator.py -m sanity
+
+# OR: running just a single halt test (which is the most simple execute test
+python3 -m pytest tests/test_simulator.py -k test_simulator_halt
 ```
 
 
