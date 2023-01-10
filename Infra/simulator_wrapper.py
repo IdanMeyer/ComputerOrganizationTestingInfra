@@ -1,8 +1,10 @@
 import os
 import random
+from pathlib import Path
+import shutil
 
 from Infra.assembler_wrapper import REGISTER_TO_NUMBER, AssemblerTestRunner
-from pathlib import Path
+
 
 class SimulatorException(Exception):
     pass
@@ -109,6 +111,12 @@ class SimulatorTestRunner(object):
             trace = f.read().splitlines()
         return trace
 
+    def set_irq2(self, original_path):
+        shutil.copyfile(original_path, self.irq2in_txt_path)
+
+    def set_diskin(self, original_path):
+        shutil.copyfile(original_path, self.diskin_txt_path)
+
     def execute_c_simulator(self):
         Path(self.irq2in_txt_path).touch()
         Path(self.diskin_txt_path).touch()
@@ -127,4 +135,25 @@ class SimulatorTestRunner(object):
         with open(self.memout_txt_path, "r") as f:
             memout_data =  f.read()
         return memout_data
+
+    def _compare_files(self, file1_path, file2_path):
+        with open(file1_path, "rb") as f1:
+                d1 = f1.read().decode().replace("\r", "")
+        with open(file2_path, "rb") as f2:
+                d2 = f2.read().decode().replace("\r", "")
+
+        min_length = min(len(d1), len(d2))
+        assert d1[:min_length] == d2[:min_length]
+
+        # Validate left over lines are only zeros
+        assert all([x in ["00000", ""] for x in d2[min_length:].split("\n")])
+
+    def compare_directories(self, base_directory):
+        files_to_compare = ["cycles.txt", "diskin.txt", "diskout.txt", "display7seg.txt", "hwregtrace.txt",
+                            "irq2in.txt", "memin.txt", "memout.txt", "regout.txt", "trace.txt"]
+        for file_to_compare in files_to_compare:
+            base_path = os.path.join(base_directory, file_to_compare)
+            simulator_path = os.path.join(self.test_folder, file_to_compare)
+            self._compare_files(base_path, simulator_path)
+
 

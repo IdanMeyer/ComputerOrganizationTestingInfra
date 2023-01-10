@@ -693,3 +693,16 @@ def test_simulator_timer_sanity(tmp_path, sleep_iter, timer_time):
     ])
     runner.set_input_data_from_str(asm_input)
     runner.run({"$a2":expected_a2})
+
+
+@pytest.mark.sanity
+@pytest.mark.simulator
+def test_simulator_compare_example_fib(tmp_path):
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    example_fib_dir = os.path.join(TESTS_BASE_FOLDER, "..", "files", "fibexample_300422_win")
+    example_fib_asm = os.path.join(example_fib_dir, "fib.asm")
+    runner.set_input_data_from_file(example_fib_asm)
+    runner.set_irq2(os.path.join(example_fib_dir, "irq2in.txt"))
+    runner.set_diskin(os.path.join(example_fib_dir, "diskin.txt"))
+    runner.run()
+    runner.compare_directories(example_fib_dir)
