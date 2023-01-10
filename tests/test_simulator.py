@@ -35,13 +35,13 @@ def test_simulator_add_sanity(tmp_path):
         "add $t0, $zero, $imm, 10",
         "add $t1, $zero, $imm, -1",
         "add $t2, $zero, $imm, -78",
-        "add $s0, $imm, $zero, 0xfff",
+        "add $s0, $imm, $zero, 0xffff",
         "add $s1, $zero, $imm, -0x100",
         "add $s2, $zero, $imm, 0x70",
         "halt $zero, $zero, $zero, 0"
                                  ])
     runner.set_input_data_from_str(asm_input)
-    runner.run({"$t0":10, "$t1":-1,  "$t2":-78, "$s0":0xfff, "$s1":-0x100,"$s2":0x70})
+    runner.run({"$t0":10, "$t1":-1,  "$t2":-78, "$s0":0xffff, "$s1":-0x100,"$s2":0x70})
 
 
 @pytest.mark.sanity
@@ -433,6 +433,23 @@ def test_simulator_add_stress(tmp_path, iter_number):
                                  ])
     runner.set_input_data_from_str(asm_input)
     runner.run({"$t0":number_1, "$t1":number_2,  "$t2":add_overflow(number_1, number_2, 20)})
+
+@pytest.mark.stress
+@pytest.mark.simulator
+@pytest.mark.parametrize("iter_number", range(100))
+def test_simulator_sub_stress(tmp_path, iter_number):
+    number_1 = random.randint(-2**17, +2**17)
+    number_2 = random.randint(-2**17, +2**17)
+
+    runner = SimulatorTestRunner(ASSEMBLER_PATH, SIMULATOR_PATH, tmp_path.as_posix())
+    asm_input = os.linesep.join([
+        f"add $t0, $zero, $imm, {number_1}",
+        f"add $t1, $zero, $imm, {number_2}",
+        f"sub $t2, $t0, $t1, 0",
+        "halt $zero, $zero, $zero, 0"
+                                 ])
+    runner.set_input_data_from_str(asm_input)
+    runner.run({"$t0":number_1, "$t1":number_2,  "$t2":add_overflow(number_1, -number_2, 20)})
 
 
 def disk_read(tmp_path, ram_buffer_address, sector):
